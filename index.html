@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- artifact refresh v2 -->
+<title>Boots Brothers Creative Services General Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.3.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.3.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.3.0/firebase-firestore-compat.min.js"></script>
+<style>
+  :root{
+    --ink:#1B2A33; --ink-soft:#3D4D56;
+    --parchment:#FAF6EC; --paper-card:#FFFFFF; --paper-line:#E7DFC9; --border:#DDD5BD;
+    --green:#2F6F4F; --green-dark:#1F4F37; --green-pale:#E7F0EA;
+    --amber:#C7902F; --amber-pale:#FBF0DD;
+    --maroon:#8C3A2B; --maroon-pale:#F6E7E2;
+    --slate:#3D5A73; --slate-pale:#E7EEF2;
+    --violet:#6B4E71; --violet-pale:#EFE6EF;
+    --ok:#2F7A4D;
+    --font-display:'Source Serif 4', Georgia, serif;
+    --font-body:'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--parchment);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+  #root{min-height:100vh;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  table{border-collapse:collapse;width:100%;}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+
+  .shell{display:flex;flex-direction:column;min-height:100vh;}
+  .topbar{background:var(--ink);color:#F2EEE2;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .brand{font-family:var(--font-display);font-weight:700;font-size:17px;line-height:1.25;max-width:480px;}
+  .topbar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .topbar .stat-pill{font-size:12px;color:#C9C2AC;background:#28373F;padding:6px 12px;border-radius:20px;}
+  .topbar .stat-pill b{color:#fff;}
+  .topbar select.year-select{background:#28373F;color:#fff;border:1px solid #44535c;border-radius:20px;padding:6px 12px;font-size:12.5px;font-weight:600;}
+
+  .tabs{display:flex;gap:6px;padding:0 24px;background:var(--ink);}
+  .tab-btn{position:relative;border:none;background:#2A3A44;color:#C9C2AC;padding:10px 18px 9px;border-radius:6px 6px 0 0;font-size:13.5px;font-weight:600;transform:translateY(4px);transition:transform .12s ease, background .12s ease;white-space:nowrap;border-bottom:3px solid transparent;}
+  .tab-btn:hover{transform:translateY(1px);color:#fff;}
+  .tab-btn.active{background:var(--parchment);color:var(--ink);transform:translateY(0);border-bottom:3px solid var(--tab-color,var(--green));}
+  .tab-btn .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--maroon);margin-left:6px;}
+
+  .content{flex:1;padding:26px 28px 60px;max-width:1260px;width:100%;margin:0 auto;}
+  .footer-note{text-align:center;font-size:11.5px;color:#9b9277;padding:18px 24px 30px;max-width:1260px;margin:0 auto;}
+
+  .gate-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:
+    repeating-linear-gradient(to bottom, var(--parchment) 0px, var(--parchment) 27px, var(--paper-line) 28px);}
+  .gate-card{background:var(--paper-card);border:1px solid var(--border);border-radius:4px;box-shadow:0 8px 30px rgba(27,42,51,0.12);padding:40px 36px;max-width:420px;width:100%;}
+  .gate-card h1{font-family:var(--font-display);font-size:26px;margin:0 0 4px;}
+  .gate-card .sub{color:var(--ink-soft);font-size:14px;margin-bottom:24px;}
+  .gate-card label{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
+  .gate-card input[type=text]{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:4px;font-size:15px;background:#fff;color:var(--ink);}
+  .gate-card input[type=text]:focus{outline:2px solid var(--green);outline-offset:1px;}
+  .gate-card .btn-primary{width:100%;justify-content:center;margin-top:18px;padding:12px;font-size:15px;}
+  .gate-foot{margin-top:18px;font-size:12px;color:var(--ink-soft);line-height:1.5;}
+  .who{font-size:12.5px;color:#C9C2AC;}
+  .who b{color:#F2EEE2;}
+  .who .switch{font-size:11.5px;color:#9aa6ad;text-decoration:underline;background:none;border:none;padding:0;margin-left:6px;}
+
+  h2.page-title{font-family:var(--font-display);font-size:24px;margin:0 0 4px;}
+  .page-sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 22px;}
+
+  .card{background:var(--paper-card);border:1px solid var(--border);border-radius:6px;padding:20px 22px;margin-bottom:20px;}
+  .card-title{font-family:var(--font-display);font-size:16px;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+
+  .banner{display:flex;gap:10px;padding:12px 14px;border-radius:5px;font-size:13.5px;margin-bottom:18px;border:1px solid;}
+  .banner-ok{background:var(--green-pale);border-color:#bcd9c8;color:var(--green-dark);}
+  .banner-warn{background:var(--amber-pale);border-color:#e7cd97;color:#7a5a16;}
+
+  table.data th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);font-weight:700;border-bottom:2px solid var(--ink);padding:9px 10px;background:#F3EEDF;}
+  table.data td{padding:8px 10px;border-bottom:1px solid var(--paper-line);vertical-align:middle;font-size:13.5px;}
+  table.data tr:hover td{background:#FBF8EF;}
+  table.data tr.unassigned td{background:var(--amber-pale);}
+  table.data select, table.data input{border:1px solid var(--border);border-radius:3px;padding:5px 6px;font-size:13px;background:#fff;}
+  .totals-row td{border-top:3px double var(--ink);font-weight:700;background:#F3EEDF;}
+  .group-row td{padding-top:14px;font-weight:700;font-family:var(--font-display);font-size:14px;border-bottom:1px solid var(--ink);}
+
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:10px;}
+  .badge-asset{background:var(--slate-pale);color:var(--slate);}
+  .badge-liability{background:var(--maroon-pale);color:var(--maroon);}
+  .badge-equity{background:var(--violet-pale);color:var(--violet);}
+  .badge-revenue{background:var(--green-pale);color:var(--green-dark);}
+  .badge-expense{background:var(--amber-pale);color:#7a5a16;}
+  .badge-unassigned{background:#eee;color:#777;}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .toolbar label{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-right:4px;}
+  .toolbar select, .toolbar input[type=text]{border:1px solid var(--border);border-radius:4px;padding:7px 9px;font-size:13px;background:#fff;}
+  .toolbar .spacer{flex:1;}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:4px;padding:9px 15px;font-size:13.5px;font-weight:600;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--green);color:#fff;}
+  .btn-primary:hover{background:var(--green-dark);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
+  .btn-ghost:hover{background:#fff;}
+  .btn-danger{background:transparent;color:var(--maroon);border-color:var(--maroon);}
+  .btn-danger:hover{background:var(--maroon-pale);}
+  .btn-sm{padding:5px 10px;font-size:12.5px;border-radius:3px;}
+  .btn-export{background:var(--amber);color:#fff;}
+  .btn-export:hover{background:#a87521;}
+
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;}
+  .form-grid label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);font-weight:700;margin-bottom:5px;}
+  .form-grid input, .form-grid select{width:100%;border:1px solid var(--border);border-radius:4px;padding:8px 9px;font-size:13.5px;background:#fff;}
+
+  .dropzone{border:2px dashed var(--border);border-radius:8px;padding:40px 20px;text-align:center;background:#FBF8EF;}
+  .dropzone h3{font-family:var(--font-display);margin:0 0 6px;font-size:18px;}
+  .dropzone p{color:var(--ink-soft);font-size:13.5px;margin:0 0 18px;}
+  .dropzone input[type=file]{display:none;}
+
+  .mapping-table{font-size:13px;}
+  .mapping-table th, .mapping-table td{padding:6px 8px;border-bottom:1px solid var(--paper-line);text-align:left;}
+
+  .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12.5px;color:var(--ink-soft);}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--ink-soft);}
+  .empty-state h3{font-family:var(--font-display);color:var(--ink);margin-bottom:6px;}
+  a.linklike{color:var(--green-dark);text-decoration:underline;cursor:pointer;font-weight:600;}
+  .small{font-size:12px;color:var(--ink-soft);}
+
+  .catbar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .catbar-track{flex:1;height:10px;background:#EFE9D8;border-radius:6px;overflow:hidden;}
+  .catbar-fill{height:100%;border-radius:6px;}
+
+  ::-webkit-scrollbar{height:10px;width:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* =========================================================================
+   GENERAL LEDGER — upload transactions, classify into a typed chart of
+   accounts (Asset / Liability / Equity / Revenue / Expense), filter by
+   year, export to Excel. Shared storage — everyone sees the same data.
+   Columns: Date, Description, Source, Account, Project, Amount.
+   ========================================================================= */
+
+const ACCOUNT_TYPES = ['Asset','Liability','Equity','Revenue','Expense'];
+const TYPE_BADGE = { Asset:'badge-asset', Liability:'badge-liability', Equity:'badge-equity', Revenue:'badge-revenue', Expense:'badge-expense', Unassigned:'badge-unassigned' };
+const PALETTE_BY_TYPE = { Asset:'var(--slate)', Liability:'var(--maroon)', Equity:'var(--violet)', Revenue:'var(--green)', Expense:'var(--amber)', Unassigned:'#999' };
+const UNASSIGNED_ID = 'acc_unassigned';
+const TYPE_CODE_BASE = { Asset:1000, Liability:2000, Equity:3000, Revenue:4000, Expense:5000, Unassigned:9000 };
+function nextCodeForType(type){
+  const base = TYPE_CODE_BASE[type] || 5000;
+  const inRange = state.accounts
+    .map(a=>parseInt(a.code,10))
+    .filter(n=> !isNaN(n) && n>=base && n<base+1000);
+  let next = inRange.length ? Math.max.apply(null, inRange)+10 : base;
+  if(next >= base+1000) next = base+999; // exceedingly unlikely, but stay in range
+  return String(next);
+}
+
+function defaultAccounts(){
+  const rows = [
+    ['1000','Cash','Asset'], ['1010','Accounts Receivable','Asset'],
+    ['2000','Accounts Payable','Liability'], ['2010','Unearned Revenue','Liability'],
+    ['3000',"Owner's Equity",'Equity'],
+    ['4000','Service Revenue','Revenue'], ['4010','Other Income','Revenue'],
+    ['5000','Office Supplies','Expense'], ['5010','Utilities','Expense'], ['5020','Rent / Lease','Expense'], ['5030','Insurance','Expense'],
+    ['5040','Professional & Legal Fees','Expense'], ['5050','Repairs & Maintenance','Expense'], ['5060','Landscaping & Grounds','Expense'],
+    ['5070','Payroll & Wages','Expense'], ['5080','Software & Subscriptions','Expense'], ['5090','Marketing & Advertising','Expense'],
+    ['5100','Travel & Meals','Expense'], ['5110','Bank & Merchant Fees','Expense'], ['5120','Taxes & Licenses','Expense']
+  ];
+  const accs = rows.map(([code,name,type])=>({ id: genId('acc'), code, name, type }));
+  accs.push({ id: UNASSIGNED_ID, code:'9999', name:'Unassigned', type:'Unassigned', isDefault:true });
+  return accs;
+}
+
+function ensureCoreGLAccounts(){
+  const core = [
+    ['1000','Cash','Asset'], ['1010','Accounts Receivable','Asset'],
+    ['2000','Accounts Payable','Liability'], ['2010','Unearned Revenue','Liability'],
+    ['3000',"Owner's Equity",'Equity'],
+    ['4000','Service Revenue','Revenue'], ['4010','Other Income','Revenue']
+  ];
+  core.forEach(([code,name,type])=>{
+    if(!state.accounts.find(a=>a.name.toLowerCase()===name.toLowerCase())){
+      state.accounts.push({ id: genId('acc'), code: state.accounts.find(a=>a.code===code) ? nextCodeForType(type) : code, name, type });
+    }
+  });
+}
+
+/* ---------------------------- state ---------------------------- */
+const state = { accounts: [], transactions: [], projects: [], activeTab: 'upload', ready: false, authed: false, currentUser: null, lastActivity: null, saveError: null };
+
+const ui = {
+  nameInput: '',
+  passcodeInput: '',
+  passcodeError: '',
+  passcodeBusy: false,
+  yearFilter: '',
+  toast: null,
+  confirmModal: null,
+  upload: { stage:null, mapping:{date:null,description:null,source:null,account:null,project:null,amount:null}, result:null },
+  ledger: { search:'', accountFilter:'', typeFilter:'', unassignedOnly:false, page:1, editingId:null, editBuffer:{}, addOpen:false, newTx:{date:'',description:'',source:'',projectId:'',amount:'',accountId:''}, sortBy:'date', sortDir:'desc' },
+  accounts: { addOpen:false, newAcc:{code:'',name:'',type:'Expense'} },
+  projects: { addOpen:false, newProj:{name:'',description:''} }
+};
+
+/* ---------------------------- in-app dialogs ----------------------------
+   Published artifacts run in a sandboxed iframe that can block native
+   window.alert()/confirm() dialogs (they silently do nothing instead of
+   throwing), so all confirmations and notices use this in-page UI instead. */
+function showToast(message, type){
+  const id = genId('toast');
+  ui.toast = { id, message, type: type||'warn' };
+  render();
+  setTimeout(()=>{ if(ui.toast && ui.toast.id===id){ ui.toast = null; render(); } }, 4500);
+}
+function showConfirmModal(message, onConfirm){
+  ui.confirmModal = { message, onConfirm };
+  render();
+}
+
+/* ---------------------------- helpers ---------------------------- */
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function pad2(n){ n=String(n); return n.length<2?'0'+n:n; }
+function pad4(n){ n=String(n); while(n.length<4) n='0'+n; return n; }
+function genId(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+function fmtMoney(n){ const v = round2(n); return (v<0?'-':'')+'$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return m+'/'+d+'/'+y; }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/`/g,'&#96;'); }
+
+function parseAmount(v){
+  if(v===null||v===undefined||v==='') return 0;
+  if(typeof v==='number') return v;
+  let s = String(v).trim();
+  if(s==='') return 0;
+  let neg = false;
+  if(/^\(.*\)$/.test(s)){ neg=true; s=s.slice(1,-1); }
+  s = s.replace(/[$,]/g,'').replace(/\s/g,'');
+  if(s.startsWith('-')){ neg=true; s=s.slice(1); }
+  let n = parseFloat(s);
+  if(isNaN(n)) return 0;
+  return neg ? -n : n;
+}
+
+function parseDateToISO(v){
+  if(v===null||v===undefined||v==='') return null;
+  if(typeof v==='number'){
+    const epoch = Date.UTC(1899,11,30);
+    const d = new Date(epoch + Math.round(v)*86400000);
+    if(isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0,10);
+  }
+  let s = String(v).trim();
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if(m){ return pad4(m[1])+'-'+pad2(m[2])+'-'+pad2(m[3]); }
+  m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
+  if(m){
+    let yr = m[3].length===2 ? ('20'+m[3]) : m[3];
+    return pad4(yr)+'-'+pad2(m[1])+'-'+pad2(m[2]);
+  }
+  let d = new Date(s);
+  if(!isNaN(d.getTime())){ return d.toISOString().slice(0,10); }
+  return null;
+}
+
+function getAccount(id){ return state.accounts.find(a=>a.id===id); }
+function findAccountByName(name){
+  if(!name) return null;
+  const lower = String(name).trim().toLowerCase();
+  if(!lower) return null;
+  return state.accounts.find(a=>a.name.toLowerCase()===lower) || null;
+}
+function findAccountByCode(code){
+  if(!code) return null;
+  const trimmed = String(code).trim();
+  if(!trimmed) return null;
+  return state.accounts.find(a=>String(a.code)===trimmed) || null;
+}
+function createAccount(name, type, code){
+  const t = type || 'Expense';
+  const acc = { id: genId('acc'), code: code ? String(code).trim() : nextCodeForType(t), name: String(name).trim(), type: t };
+  state.accounts.push(acc);
+  return acc;
+}
+
+function getProject(id){ if(!id) return null; return state.projects.find(p=>p.id===id) || null; }
+function findProjectByName(name){
+  if(!name) return null;
+  const lower = String(name).trim().toLowerCase();
+  if(!lower) return null;
+  return state.projects.find(p=>p.name.toLowerCase()===lower) || null;
+}
+function createProject(name, description){
+  const proj = { id: genId('proj'), name: String(name).trim(), description: description||'' };
+  state.projects.push(proj);
+  return proj;
+}
+function projectOptionsHtml(selectedId){
+  let html = `<option value="" ${!selectedId?'selected':''}>— none —</option>`;
+  state.projects.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
+    html += `<option value="${p.id}" ${p.id===selectedId?'selected':''}>${escapeHtml(p.name)}</option>`;
+  });
+  return html;
+}
+
+function guessHeader(headers, ...needles){
+  for(const h of headers){
+    const lower = h.toLowerCase();
+    if(needles.some(n=>lower.includes(n))) return h;
+  }
+  return null;
+}
+
+function accountOptionsHtml(selectedId, includeAllOption){
+  let html = '';
+  if(includeAllOption) html += `<option value="">All accounts</option>`;
+  ACCOUNT_TYPES.forEach(type=>{
+    const accs = state.accounts.filter(a=>a.type===type).sort((a,b)=>(parseInt(a.code,10)||0)-(parseInt(b.code,10)||0) || a.name.localeCompare(b.name));
+    if(accs.length===0) return;
+    html += `<optgroup label="${type}">`;
+    accs.forEach(a=>{ html += `<option value="${a.id}" ${a.id===selectedId?'selected':''}>${escapeHtml(a.code)} — ${escapeHtml(a.name)}</option>`; });
+    html += `</optgroup>`;
+  });
+  const unassigned = state.accounts.filter(a=>a.type==='Unassigned');
+  if(unassigned.length){
+    html += `<optgroup label="Unassigned">`;
+    unassigned.forEach(a=>{ html += `<option value="${a.id}" ${a.id===selectedId?'selected':''}>${escapeHtml(a.name)}</option>`; });
+    html += `</optgroup>`;
+  }
+  return html;
+}
+
+function typeFilterOptionsHtml(selected){
+  let html = `<option value="" ${!selected?'selected':''}>All Types</option>`;
+  ACCOUNT_TYPES.concat(['Unassigned']).forEach(type=>{
+    html += `<option value="${type}" ${type===selected?'selected':''}>${type}</option>`;
+  });
+  return html;
+}
+
+function getAvailableYears(){
+  const years = new Set();
+  state.transactions.forEach(t=>{ if(t.date && t.date.length>=4) years.add(t.date.slice(0,4)); });
+  years.add(String(new Date().getFullYear()));
+  return Array.from(years).sort((a,b)=> b.localeCompare(a));
+}
+
+function txSignature(date, description, amount, source){
+  return date+'|'+String(description||'').trim().toLowerCase()+'|'+round2(amount)+'|'+String(source||'').trim().toLowerCase();
+}
+
+const SORT_DEFAULT_DIR = { date:'desc', description:'asc', source:'asc', account:'asc', project:'asc', amount:'desc' };
+function sortValue(t, key){
+  switch(key){
+    case 'date': return t.date || '';
+    case 'description': return (t.description||'').toLowerCase();
+    case 'source': return (t.source||'').toLowerCase();
+    case 'account': { const a = getAccount(t.accountId); return a ? (parseInt(a.code,10)||0) : -1; }
+    case 'project': { const p = getProject(t.projectId); return p ? p.name.toLowerCase() : ''; }
+    case 'amount': return Number(t.amount)||0;
+    default: return t.date || '';
+  }
+}
+function sortTransactions(rows){
+  const key = ui.ledger.sortBy || 'date';
+  const mult = ui.ledger.sortDir==='asc' ? 1 : -1;
+  return rows.slice().sort((a,b)=>{
+    const va = sortValue(a,key), vb = sortValue(b,key);
+    if(va<vb) return -1*mult;
+    if(va>vb) return 1*mult;
+    return 0;
+  });
+}
+function sortArrow(key){
+  if(ui.ledger.sortBy!==key) return '';
+  return ui.ledger.sortDir==='asc' ? ' \u25B2' : ' \u25BC';
+}
+
+function transactionsForYear(){
+  if(!ui.yearFilter) return state.transactions;
+  return state.transactions.filter(t=> t.date && t.date.slice(0,4)===ui.yearFilter);
+}
+
+/* ---------------------------- storage backend (Firebase Firestore + Auth) ---------------------------- */
+// This app now stores its shared data in Firebase (Firestore) instead of Claude's
+// window.storage. That means it works identically no matter where this HTML file
+// is opened from — a Claude artifact, GitHub Pages, or even double-clicked locally —
+// because the data lives in your own Firebase project, not tied to any one link.
+const firebaseConfig = {
+  apiKey: "AIzaSyBABibGDE23Tcf8LW9sGgsJzKSex4KOl6k",
+  authDomain: "boots-brothers-gl.firebaseapp.com",
+  projectId: "boots-brothers-gl",
+  storageBucket: "boots-brothers-gl.firebasestorage.app",
+  messagingSenderId: "952220863561",
+  appId: "1:952220863561:web:ae13f4e38cc506955e0398"
+};
+const TEAM_AUTH_EMAIL = 'bootsbrotherscs@gmail.com'; // fixed account behind the single shared team passcode
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const fbAuth = firebaseApp.auth();
+const db = firebaseApp.firestore();
+const LEDGER_COLLECTION = 'ledger_data';
+
+const storageBackend = {
+  async get(key, shared){
+    if(!shared){
+      try{
+        const raw = window.localStorage.getItem('gl_local_'+key);
+        return raw===null ? null : { key, value: raw, shared:false };
+      }catch(e){ return null; }
+    }
+    const snap = await db.collection(LEDGER_COLLECTION).doc(key).get();
+    if(!snap.exists) return null;
+    const data = snap.data();
+    return { key, value: data.value, shared:true };
+  },
+  async set(key, value, shared){
+    if(!shared){
+      window.localStorage.setItem('gl_local_'+key, value);
+      return { key, value, shared:false };
+    }
+    await db.collection(LEDGER_COLLECTION).doc(key).set({
+      value,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return { key, value, shared:true };
+  }
+};
+
+/* ---------------------------- storage (with migration from earlier shapes) ---------------------------- */
+async function loadAll(){
+  try{
+    const r = await storageBackend.get('expense_accounts', true);
+    state.accounts = r && r.value ? JSON.parse(r.value) : null;
+  }catch(e){ state.accounts = null; }
+
+  if(!state.accounts){
+    try{
+      const r = await storageBackend.get('expense_categories', true);
+      if(r && r.value){
+        const old = JSON.parse(r.value);
+        state.accounts = old.map(c=> c.isDefault ? { id: UNASSIGNED_ID, name:'Unassigned', type:'Unassigned', isDefault:true } : { id:c.id, name:c.name, type:'Expense' });
+      }
+    }catch(e){ /* ignore */ }
+  }
+  if(!state.accounts || state.accounts.length===0){ state.accounts = defaultAccounts(); }
+
+  // backfill type on any account saved before types existed
+  state.accounts.forEach(a=>{
+    if(!a.type) a.type = (a.id===UNASSIGNED_ID) ? 'Unassigned' : 'Expense';
+  });
+  if(!state.accounts.find(a=>a.id===UNASSIGNED_ID)) state.accounts.push({ id:UNASSIGNED_ID, name:'Unassigned', type:'Unassigned', isDefault:true });
+  // backfill account numbers on any account saved before this field existed
+  // (one at a time, so each new assignment sees the ones already given out)
+  state.accounts.forEach(a=>{
+    if(!a.code) a.code = (a.id===UNASSIGNED_ID) ? '9999' : nextCodeForType(a.type);
+  });
+  ensureCoreGLAccounts();
+  saveAccounts();
+
+  try{
+    const r = await storageBackend.get('projects', true);
+    state.projects = r && r.value ? JSON.parse(r.value) : [];
+  }catch(e){ state.projects = []; }
+
+  try{
+    const r = await storageBackend.get('transactions', true);
+    state.transactions = r && r.value ? JSON.parse(r.value) : null;
+  }catch(e){ state.transactions = null; }
+  if(state.transactions===null){
+    try{
+      const r = await storageBackend.get('expenses', true);
+      state.transactions = r && r.value ? JSON.parse(r.value) : [];
+    }catch(e){ state.transactions = []; }
+  }
+
+  // migrate older transaction shape: vendor->source, categoryId->accountId, free-text project->projectId
+  let projectsCreatedDuringMigration = false;
+  state.transactions = state.transactions.map(t=>{
+    let fixed = t;
+    if('vendor' in t || 'categoryId' in t){
+      const importedFrom = t.importedFrom!==undefined ? t.importedFrom : (t.source||'');
+      fixed = Object.assign({}, t);
+      fixed.source = t.vendor!==undefined ? t.vendor : (t.source||'');
+      fixed.accountId = t.categoryId || t.accountId || UNASSIGNED_ID;
+      fixed.importedFrom = importedFrom;
+      delete fixed.vendor;
+      delete fixed.categoryId;
+    }
+    if(fixed.accountId===undefined) fixed.accountId = UNASSIGNED_ID;
+    if(fixed.projectId===undefined){
+      const oldVal = (fixed.project||'').trim();
+      if(oldVal){
+        let proj = findProjectByName(oldVal);
+        if(!proj){ proj = createProject(oldVal, ''); projectsCreatedDuringMigration = true; }
+        fixed.projectId = proj.id;
+      } else {
+        fixed.projectId = '';
+      }
+      delete fixed.project;
+    }
+    return fixed;
+  });
+  if(projectsCreatedDuringMigration) saveProjects();
+
+  try{
+    const r = await storageBackend.get('last_activity', true);
+    state.lastActivity = r && r.value ? JSON.parse(r.value) : null;
+  }catch(e){ state.lastActivity = null; }
+
+  try{
+    const r = await storageBackend.get('last_user', false);
+    ui.nameInput = r && r.value ? r.value : '';
+  }catch(e){ ui.nameInput = ''; }
+
+  if(state.transactions.length===0) state.activeTab = 'upload';
+
+  state.ready = true;
+  render();
+}
+let writeQueue = Promise.resolve();
+function queuedStorageSet(key, value, shared, attempts){
+  // Chains onto the queue so this write only starts once every earlier
+  // write has fully finished — storage.set calls never overlap.
+  const result = writeQueue.then(()=> storageSetWithRetry(key, value, shared, attempts));
+  writeQueue = result.catch(()=>{}); // keep the chain alive even if this write ultimately failed
+  return result;
+}
+async function storageSetWithRetry(key, value, shared, attempts=4){
+  for(let i=0;i<attempts;i++){
+    try{
+      const r = await storageBackend.set(key, value, shared);
+      if(r) return true;
+    }catch(e){
+      console.error('storage set failed for', key, '(attempt '+(i+1)+'/'+attempts+')', e);
+    }
+    if(i<attempts-1) await new Promise(res=>setTimeout(res, 700*(i+1)));
+  }
+  return false;
+}
+let autoRetryTimer = null;
+function scheduleAutoRetry(){
+  if(autoRetryTimer) clearTimeout(autoRetryTimer);
+  autoRetryTimer = setTimeout(()=>{
+    autoRetryTimer = null;
+    if(state.saveError && state.saveError.retry){ state.saveError.retry(); }
+  }, 10000);
+}
+function clearAutoRetry(){
+  if(autoRetryTimer){ clearTimeout(autoRetryTimer); autoRetryTimer = null; }
+}
+async function saveAccounts(){
+  const ok = await queuedStorageSet('expense_accounts', JSON.stringify(state.accounts), true);
+  if(!ok){ state.saveError = {what:'your account changes', retry:saveAccounts}; scheduleAutoRetry(); render(); }
+  else if(state.saveError && state.saveError.what==='your account changes'){ clearAutoRetry(); state.saveError=null; render(); }
+}
+async function saveTransactions(){
+  const ok = await queuedStorageSet('transactions', JSON.stringify(state.transactions), true);
+  if(!ok){ state.saveError = {what:'your transaction changes', retry:saveTransactions}; scheduleAutoRetry(); render(); }
+  else if(state.saveError && state.saveError.what==='your transaction changes'){ clearAutoRetry(); state.saveError=null; render(); }
+}
+async function saveProjects(){
+  const ok = await queuedStorageSet('projects', JSON.stringify(state.projects), true);
+  if(!ok){ state.saveError = {what:'your project changes', retry:saveProjects}; scheduleAutoRetry(); render(); }
+  else if(state.saveError && state.saveError.what==='your project changes'){ clearAutoRetry(); state.saveError=null; render(); }
+}
+async function saveLastUser(name){ try{ await storageBackend.set('last_user', name, false); }catch(e){} }
+function touchActivity(action){
+  state.lastActivity = { user: state.currentUser || 'Unknown', action, timestamp: new Date().toISOString() };
+  queuedStorageSet('last_activity', JSON.stringify(state.lastActivity), true).catch(()=>{});
+}
+
+/* ---------------------------- render shell ---------------------------- */
+function render(){
+  const root = document.getElementById('root');
+  if(!state.ready){ root.innerHTML = '<div style="padding:60px;text-align:center;font-family:var(--font-display);font-size:20px;">Loading…</div>'; return; }
+  let mainHtml;
+  if(!state.authed) mainHtml = renderPasscodeGate();
+  else if(!state.currentUser) mainHtml = renderGate();
+  else mainHtml = renderShell();
+  root.innerHTML = mainHtml + renderOverlays();
+}
+
+function renderPasscodeGate(){
+  return `
+  <div class="gate-wrap">
+    <div class="gate-card">
+      <h1>📒 Boots Brothers Creative Services General Ledger</h1>
+      <div class="sub">Enter the team passcode to open the shared ledger.</div>
+      <label for="passcodeField">Team passcode</label>
+      <input type="password" id="passcodeField" placeholder="Passcode" value="${escapeAttr(ui.passcodeInput)}" oninput="App.onPasscodeInput(this.value)" onkeydown="if(event.key==='Enter')App.submitPasscode()" autofocus>
+      ${ui.passcodeError ? `<div style="color:#c0392b;font-size:12.5px;margin-top:8px;">${escapeHtml(ui.passcodeError)}</div>` : ''}
+      <button class="btn btn-primary" onclick="App.submitPasscode()" ${ui.passcodeBusy?'disabled':''}>${ui.passcodeBusy?'Checking…':'Enter'}</button>
+      <div class="gate-foot">Ask whoever set up this ledger for the passcode if you don't have it.</div>
+    </div>
+  </div>`;
+}
+
+function renderOverlays(){
+  let html = '';
+  if(ui.toast){
+    const bg = ui.toast.type==='error' ? '#5a2418' : '#2A3A44';
+    html += `<div style="position:fixed;bottom:24px;right:24px;max-width:360px;background:${bg};color:#fff;padding:14px 18px;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.25);font-size:13.5px;z-index:9999;display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;line-height:1.4;">${escapeHtml(ui.toast.message)}</div>
+      <button onclick="App.dismissToast()" style="background:none;border:none;color:#fff;opacity:0.7;cursor:pointer;font-size:16px;line-height:1;padding:0;">×</button>
+    </div>`;
+  }
+  if(ui.confirmModal){
+    html += `<div style="position:fixed;inset:0;background:rgba(27,42,51,0.55);display:flex;align-items:center;justify-content:center;z-index:9998;padding:20px;">
+      <div style="background:#fff;border-radius:8px;padding:26px 28px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.3);">
+        <div style="font-size:14.5px;color:#1B2A33;margin-bottom:22px;line-height:1.5;">${escapeHtml(ui.confirmModal.message)}</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-ghost btn-sm" onclick="App.confirmModalNo()">Cancel</button>
+          <button class="btn btn-sm" style="background:#8C3A2B;color:#fff;border:none;" onclick="App.confirmModalYes()">Confirm</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+function renderGate(){
+  return `
+  <div class="gate-wrap">
+    <div class="gate-card">
+      <h1>📒 Boots Brothers Creative Services General Ledger</h1>
+      <div class="sub">Shared by your whole team — everyone sees the same transactions and chart of accounts.</div>
+      <label for="nameField">Your name</label>
+      <input type="text" id="nameField" placeholder="e.g. Terri Rufus" value="${escapeAttr(ui.nameInput)}" oninput="App.onNameInput(this.value)" onkeydown="if(event.key==='Enter')App.enterApp()">
+      <button class="btn btn-primary" onclick="App.enterApp()">Enter</button>
+      <div class="gate-foot">Your name is attached to anything you import, add, or reclassify so the team can see who did what. This isn't a login system — anyone with this link can enter any name.</div>
+    </div>
+  </div>`;
+}
+
+const TAB_COLORS = { upload:'#C7902F', ledger:'#2F6F4F', accounts:'#3D5A73', summary:'#8C3A2B', projects:'#6B4E71' };
+
+function renderShell(){
+  const yearTx = transactionsForYear();
+  const total = yearTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const unassignedCount = yearTx.filter(t=>!t.accountId || t.accountId===UNASSIGNED_ID).length;
+  const netIncome = yearTx.reduce((s,t)=>{
+    const acc = getAccount(t.accountId);
+    if(acc && acc.type==='Revenue') return s + (Number(t.amount)||0);
+    if(acc && acc.type==='Expense') return s - (Number(t.amount)||0);
+    return s;
+  }, 0);
+
+  const years = getAvailableYears();
+  const yearOpts = `<option value="">All Years</option>` + years.map(y=>`<option value="${y}" ${y===ui.yearFilter?'selected':''}>${y}</option>`).join('');
+
+  const tabs = [['upload','Upload'],['ledger','Ledger'],['accounts','Accounts'],['summary','Summary'],['projects','Projects']];
+  const tabBtns = tabs.map(([key,label])=>{
+    const active = state.activeTab===key ? ' active' : '';
+    const dot = (key==='ledger' && unassignedCount>0) ? `<span class="dot" title="${unassignedCount} unassigned"></span>` : '';
+    return `<button class="tab-btn${active}" style="--tab-color:${TAB_COLORS[key]}" onclick="App.setTab('${key}')">${label}${dot}</button>`;
+  }).join('');
+
+  let body = '';
+  if(state.activeTab==='upload') body = renderUpload();
+  else if(state.activeTab==='ledger') body = renderLedger();
+  else if(state.activeTab==='accounts') body = renderAccounts();
+  else if(state.activeTab==='summary') body = renderSummary();
+  else if(state.activeTab==='projects') body = renderProjects();
+
+  return `
+  <div class="shell">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div class="brand">📒 Boots Brothers Creative Services General Ledger</div>
+        <div class="who">Signed in as <b>${escapeHtml(state.currentUser)}</b><button class="switch" onclick="App.switchUser()">switch user</button></div>
+      </div>
+      <div class="right">
+        <select class="year-select" onchange="App.setYearFilter(this.value)">${yearOpts}</select>
+        <span class="stat-pill"><b>${yearTx.length}</b> transactions</span>
+        <span class="stat-pill"><b>${fmtMoney(total)}</b> total</span>
+        <span class="stat-pill" style="background:${netIncome>=0?'#1F4F37':'#5a2418'};"><b>${fmtMoney(netIncome)}</b> net income</span>
+        ${unassignedCount>0 ? `<span class="stat-pill" style="background:#5a4416;color:#fff;"><b>${unassignedCount}</b> unassigned</span>` : ''}
+        <button class="btn btn-export btn-sm" onclick="App.exportToExcel()">⬇ Export to Excel</button>
+      </div>
+    </div>
+    ${state.saveError ? `<div style="background:#5a2418;color:#fbe2dc;font-size:12.5px;padding:8px 28px;display:flex;align-items:center;gap:12px;">⚠ Couldn't save ${escapeHtml(state.saveError.what)} — the storage service had an error. Your changes are visible to you now but haven't synced yet; retrying automatically in the background. Avoid closing or refreshing until this clears. <button class="btn btn-sm" style="background:#fff;color:#5a2418;" onclick="App.retrySave()">Retry now</button></div>` : ''}
+    ${state.lastActivity ? `<div style="background:#23323b;color:#9aa6ad;font-size:11.5px;padding:5px 28px;">Last update: <b style="color:#cfc8b0;">${escapeHtml(state.lastActivity.user)}</b> — ${escapeHtml(state.lastActivity.action)} <span class="mono">(${new Date(state.lastActivity.timestamp).toLocaleString()})</span></div>` : ''}
+    <div class="tabs">${tabBtns}</div>
+    <div class="content">${body}</div>
+    <div class="footer-note">Shared with everyone who opens this app — uploads, edits, and reclassifications sync for the whole team in real time. Net income = Revenue − Expense accounts for the selected year; amounts are entered as a single signed figure (no separate debit/credit columns).</div>
+  </div>`;
+}
+
+/* ---------------------------- Upload ---------------------------- */
+function renderUpload(){
+  let html = `<h2 class="page-title">Upload Transactions</h2><p class="page-sub">Import a CSV (or Excel) export. You'll map the columns next.</p>`;
+
+  if(ui.upload.result){
+    const r = ui.upload.result;
+    html += `<div class="banner ${(r.errors||r.duplicates)? 'banner-warn':'banner-ok'}">
+      <div>Imported <b>${r.imported}</b> transaction${r.imported===1?'':'s'}${r.newAccs.length? ', created '+r.newAccs.length+' new account'+(r.newAccs.length===1?'':'s')+' (review their type on the Accounts tab)' : ''}${r.newProjs.length? ', created '+r.newProjs.length+' new project'+(r.newProjs.length===1?'':'s') : ''}.
+      ${r.duplicates ? `<br>${r.duplicates} row(s) skipped as duplicates already in the ledger (same date, description, amount, and source).` : ''}
+      ${r.errors ? `<br>${r.errors} row(s) skipped (missing or unreadable date/amount).` : ''}</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="App.dismissUploadResult()">Dismiss</button>`;
+  }
+
+  if(!ui.upload.stage){
+    html += `<div class="dropzone">
+      <h3>Choose a file</h3>
+      <p>.csv, .xls, or .xlsx — we'll ask you to map the columns next.</p>
+      <label class="btn btn-primary" for="fileInput">Choose file</label>
+      <input type="file" id="fileInput" accept=".csv,.xls,.xlsx" onchange="App.handleFile(event)">
+    </div>`;
+    if(state.transactions.length===0){
+      html += `<div style="text-align:center;margin-top:14px;"><button class="btn btn-ghost btn-sm" onclick="App.loadSampleData()">Or load a few sample transactions to try it out</button></div>`;
+    }
+    html += `<div class="card">
+      <div class="card-title">What your file should look like</div>
+      <p class="small">Any column order or naming works — you'll map columns next. At minimum we need a <b>date</b>, a <b>description</b>, and an <b>amount</b>. <b>Source</b> and <b>Project</b> are optional free-text columns. If your file already has an <b>account</b> column, we'll match it to your chart of accounts (or create a new account, flagged for you to set its type on the Accounts tab).</p>
+    </div>`;
+    return html;
+  }
+
+  html += renderMappingStep();
+  return html;
+}
+
+function renderMappingStep(){
+  const stage = ui.upload.stage;
+  const headers = stage.headers;
+  const map = ui.upload.mapping;
+  const opts = (val)=> ['<option value="">— none —</option>'].concat(headers.map(h=>`<option value="${escapeAttr(h)}" ${h===val?'selected':''}>${escapeHtml(h)}</option>`)).join('');
+
+  let html = `<div class="card">
+    <div class="card-title">Map your columns — <span class="small">${escapeHtml(stage.filename)} (${stage.rows.length} rows)</span></div>
+    <table class="mapping-table">
+      <tr><th>Field</th><th>Column in your file</th></tr>
+      <tr><td>Date *</td><td><select onchange="App.setMapping('date', this.value)">${opts(map.date)}</select></td></tr>
+      <tr><td>Description *</td><td><select onchange="App.setMapping('description', this.value)">${opts(map.description)}</select></td></tr>
+      <tr><td>Amount *</td><td><select onchange="App.setMapping('amount', this.value)">${opts(map.amount)}</select></td></tr>
+      <tr><td>Source</td><td><select onchange="App.setMapping('source', this.value)">${opts(map.source)}</select></td></tr>
+      <tr><td>Project</td><td><select onchange="App.setMapping('project', this.value)">${opts(map.project)}</select></td></tr>
+      <tr><td>Account <span class="small">(optional)</span></td><td><select onchange="App.setMapping('account', this.value)">${opts(map.account)}</select></td></tr>
+    </table>
+
+    <div class="card-title" style="margin-top:22px;">Preview (first 5 rows)</div>
+    ${renderMappingPreview()}
+
+    <div style="margin-top:18px;display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="App.confirmImport()">Import ${stage.rows.length} rows</button>
+      <button class="btn btn-ghost" onclick="App.cancelUpload()">Cancel</button>
+    </div>
+  </div>`;
+  return html;
+}
+
+function renderMappingPreview(){
+  const stage = ui.upload.stage;
+  const map = ui.upload.mapping;
+  if(!map.date || !map.description || !map.amount) return `<div class="banner banner-warn">Select Date, Description, and Amount columns to preview.</div>`;
+  const rows = stage.rows.slice(0,5).map(row=>{
+    const iso = parseDateToISO(row[map.date]);
+    const desc = row[map.description];
+    const amt = parseAmount(row[map.amount]);
+    const src = map.source ? row[map.source] : '';
+    const proj = map.project ? row[map.project] : '';
+    const acc = map.account ? row[map.account] : '';
+    return `<tr>
+      <td style="${iso?'':'color:var(--maroon)'}">${iso?fmtDate(iso):'unreadable date'}</td>
+      <td>${escapeHtml(desc||'')}</td>
+      <td class="small">${escapeHtml(src||'')}</td>
+      <td>${acc?escapeHtml(acc):'<i>Unassigned</i>'}</td>
+      <td class="small">${escapeHtml(proj||'')}</td>
+      <td class="num">${fmtMoney(amt)}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="data"><thead><tr><th>Date</th><th>Description</th><th>Source</th><th>Account</th><th>Project</th><th class="num">Amount</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------------------------- Ledger ---------------------------- */
+function filteredTransactions(){
+  const f = ui.ledger;
+  const rows = transactionsForYear().filter(t=>{
+    if(f.accountFilter && t.accountId !== f.accountFilter) return false;
+    if(f.typeFilter){ const acc = getAccount(t.accountId); const accType = acc ? acc.type : 'Unassigned'; if(accType !== f.typeFilter) return false; }
+    if(f.unassignedOnly && t.accountId !== UNASSIGNED_ID) return false;
+    if(f.search){
+      const s = f.search.toLowerCase();
+      const proj = getProject(t.projectId);
+      const hay = (t.description+' '+(t.source||'')+' '+(proj?proj.name:'')).toLowerCase();
+      if(!hay.includes(s)) return false;
+    }
+    return true;
+  });
+  return sortTransactions(rows);
+}
+
+function renderLedger(){
+  let html = `<h2 class="page-title">Ledger</h2><p class="page-sub">Every transaction for ${ui.yearFilter||'all years'} — classify each into an account right from the dropdown.</p>`;
+
+  html += `<div class="toolbar">
+    <div><label>Type</label><select onchange="App.setTypeFilter(this.value)">${typeFilterOptionsHtml(ui.ledger.typeFilter)}</select></div>
+    <div><label>Account</label><select onchange="App.setAccountFilter(this.value)">${accountOptionsHtml(ui.ledger.accountFilter, true)}</select></div>
+    <div><label>Search</label><input type="text" placeholder="description, source, project…" value="${escapeAttr(ui.ledger.search)}" onchange="App.setLedgerFilter('search', this.value)"></div>
+    <label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" ${ui.ledger.unassignedOnly?'checked':''} onchange="App.setLedgerFilterBool('unassignedOnly', this.checked)"> Unassigned only</label>
+    <div class="spacer"></div>
+    <button class="btn btn-primary btn-sm" onclick="App.toggleAddTx()">${ui.ledger.addOpen?'Cancel':'+ Add transaction'}</button>
+  </div>`;
+
+  if(ui.ledger.addOpen) html += renderAddTxForm();
+
+  const all = filteredTransactions();
+
+  const pageSize = 50;
+  const totalPages = Math.max(1, Math.ceil(all.length/pageSize));
+  if(ui.ledger.page>totalPages) ui.ledger.page = totalPages;
+  const pageRows = all.slice((ui.ledger.page-1)*pageSize, ui.ledger.page*pageSize);
+
+  if(all.length===0){
+    html += `<div class="card empty-state"><h3>No transactions match</h3><p>Try widening your filters or the year selector, or upload some transactions.</p></div>`;
+    return html;
+  }
+
+  const rows = pageRows.map(t=>renderTxRow(t)).join('');
+  let allTotal = 0; all.forEach(t=>allTotal+=Number(t.amount)||0);
+
+  html += `<div class="card" style="padding:0;overflow-x:auto;">
+    <table class="data">
+      <thead><tr>
+        <th style="width:90px;cursor:pointer;user-select:none;" onclick="App.setSort('date')">Date${sortArrow('date')}</th>
+        <th style="cursor:pointer;user-select:none;" onclick="App.setSort('description')">Description${sortArrow('description')}</th>
+        <th style="width:130px;cursor:pointer;user-select:none;" onclick="App.setSort('source')">Source${sortArrow('source')}</th>
+        <th style="width:190px;cursor:pointer;user-select:none;" onclick="App.setSort('account')">Account${sortArrow('account')}</th>
+        <th style="width:130px;cursor:pointer;user-select:none;" onclick="App.setSort('project')">Project${sortArrow('project')}</th>
+        <th class="num" style="width:95px;cursor:pointer;user-select:none;" onclick="App.setSort('amount')">Amount${sortArrow('amount')}</th>
+        <th style="width:110px"></th>
+      </tr></thead>
+      <tbody>${rows}
+        <tr class="totals-row"><td colspan="5">Total (${all.length} rows, this filter)</td><td class="num">${fmtMoney(allTotal)}</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pager">Showing ${pageRows.length} of ${all.length} — Page ${ui.ledger.page} of ${totalPages}
+    <button class="btn btn-ghost btn-sm" ${ui.ledger.page<=1?'disabled':''} onclick="App.ledgerPage(${ui.ledger.page-1})">‹ Prev</button>
+    <button class="btn btn-ghost btn-sm" ${ui.ledger.page>=totalPages?'disabled':''} onclick="App.ledgerPage(${ui.ledger.page+1})">Next ›</button>
+  </div>`;
+  return html;
+}
+
+function renderTxRow(t){
+  const isEditing = ui.ledger.editingId === t.id;
+  const isUnassigned = !t.accountId || t.accountId===UNASSIGNED_ID;
+
+  if(isEditing){
+    const b = ui.ledger.editBuffer;
+    return `<tr>
+      <td><input type="date" value="${b.date}" oninput="ui.ledger.editBuffer.date=this.value"></td>
+      <td><input type="text" value="${escapeAttr(b.description)}" oninput="ui.ledger.editBuffer.description=this.value" style="width:100%"></td>
+      <td><input type="text" value="${escapeAttr(b.source)}" oninput="ui.ledger.editBuffer.source=this.value" style="width:100%"></td>
+      <td><select onchange="App.reclassify('${t.id}', this.value)">${accountOptionsHtml(t.accountId,false)}</select></td>
+      <td><select onchange="ui.ledger.editBuffer.projectId=this.value">${projectOptionsHtml(b.projectId)}</select></td>
+      <td><input type="text" class="num" value="${b.amount}" oninput="ui.ledger.editBuffer.amount=this.value" style="width:80px"></td>
+      <td><button class="btn btn-primary btn-sm" onclick="App.saveTxEdit('${t.id}')">Save</button> <button class="btn btn-ghost btn-sm" onclick="App.cancelTxEdit()">Cancel</button></td>
+    </tr>`;
+  }
+
+  return `<tr class="${isUnassigned?'unassigned':''}">
+    <td class="mono">${fmtDate(t.date)}</td>
+    <td>${escapeHtml(t.description||'')}</td>
+    <td class="small">${escapeHtml(t.source||'')}</td>
+    <td><select onchange="App.reclassify('${t.id}', this.value)">${accountOptionsHtml(t.accountId,false)}</select> ${isUnassigned ? '<span class="badge badge-unassigned">assign me</span>' : ''}</td>
+    <td class="small">${escapeHtml((getProject(t.projectId)||{}).name||'')}</td>
+    <td class="num">${fmtMoney(t.amount)}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="App.startTxEdit('${t.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="App.deleteTx('${t.id}')">Delete</button></td>
+  </tr>`;
+}
+
+function renderAddTxForm(){
+  const n = ui.ledger.newTx;
+  return `<div class="card" style="background:#FBF8EF;">
+    <div class="form-grid">
+      <div><label>Date</label><input type="date" value="${n.date}" oninput="ui.ledger.newTx.date=this.value"></div>
+      <div><label>Description</label><input type="text" value="${escapeAttr(n.description)}" oninput="ui.ledger.newTx.description=this.value"></div>
+      <div><label>Source</label><input type="text" value="${escapeAttr(n.source)}" oninput="ui.ledger.newTx.source=this.value"></div>
+      <div><label>Account</label><select onchange="ui.ledger.newTx.accountId=this.value">${'<option value="">choose…</option>'+accountOptionsHtml(null,false)}</select></div>
+      <div><label>Project</label><select onchange="ui.ledger.newTx.projectId=this.value">${projectOptionsHtml(n.projectId)}</select></div>
+      <div><label>Amount</label><input type="text" value="${n.amount}" oninput="ui.ledger.newTx.amount=this.value"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="App.addTransaction()">Add transaction</button>
+  </div>`;
+}
+
+/* ---------------------------- Accounts ---------------------------- */
+function renderAccounts(){
+  let html = `<h2 class="page-title">Chart of Accounts</h2><p class="page-sub">Add, rename, retype, or remove accounts. Totals reflect ${ui.yearFilter||'all years'} and update automatically as you classify transactions.</p>`;
+
+  const yearTx = transactionsForYear();
+  const total = yearTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const unassignedTotal = yearTx.filter(t=>!t.accountId||t.accountId===UNASSIGNED_ID).length;
+  if(unassignedTotal>0){
+    html += `<div class="banner banner-warn">⚠ <b>${unassignedTotal}</b> transaction${unassignedTotal===1?'':'s'} ${unassignedTotal===1?'is':'are'} unassigned. <a class="linklike" onclick="App.setTab('ledger')">Go classify them</a></div>`;
+  }
+
+  let bodyRows = '';
+  const groupTypes = ACCOUNT_TYPES.concat(['Unassigned']);
+  groupTypes.forEach((type)=>{
+    const accs = state.accounts.filter(a=>a.type===type).sort((a,b)=>(parseInt(a.code,10)||0)-(parseInt(b.code,10)||0) || a.name.localeCompare(b.name));
+    if(accs.length===0) return;
+    const rows = accs.map((a)=>{
+      const rowTx = yearTx.filter(t=>t.accountId===a.id);
+      const sum = rowTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+      const pct = total!==0 ? Math.round((sum/Math.abs(total))*100) : 0;
+      const typeOpts = ACCOUNT_TYPES.map(t=>`<option value="${t}" ${t===a.type?'selected':''}>${t}</option>`).join('') + (a.type==='Unassigned' ? `<option value="Unassigned" selected>Unassigned</option>` : '');
+      return `<tr>
+        <td class="mono">${a.isDefault ? escapeHtml(a.code) : `<input type="text" value="${escapeAttr(a.code)}" onchange="App.updateAccountCode('${a.id}', this.value)" style="width:70px" class="mono">`}</td>
+        <td>${a.isDefault ? `<span class="badge ${TYPE_BADGE[a.type]}">${escapeHtml(a.name)}</span>` : `<input type="text" value="${escapeAttr(a.name)}" onchange="App.renameAccount('${a.id}', this.value)" style="width:170px">`}</td>
+        <td>${a.isDefault ? `<span class="small">—</span>` : `<select onchange="App.retypeAccount('${a.id}', this.value)">${typeOpts}</select>`}</td>
+        <td class="small">${rowTx.length}</td>
+        <td class="num">${fmtMoney(sum)}</td>
+        <td style="width:140px;"><div class="catbar-wrap"><div class="catbar-track"><div class="catbar-fill" style="width:${Math.min(Math.abs(pct),100)}%;background:${PALETTE_BY_TYPE[a.type]};"></div></div><span class="small mono">${pct}%</span></div></td>
+        <td>${(!a.isDefault && rowTx.length===0) ? `<button class="btn btn-danger btn-sm" onclick="App.deleteAccount('${a.id}')">Delete</button>` : (a.isDefault ? '<span class="small">default</span>' : '<span class="small">in use</span>')}</td>
+      </tr>`;
+    }).join('');
+    bodyRows += `<tr class="group-row"><td colspan="7">${type}</td></tr>${rows}`;
+  });
+
+  html += `<div class="card">
+    <div class="card-title">Accounts <button class="btn btn-primary btn-sm" onclick="App.toggleAddAccount()">${ui.accounts.addOpen?'Cancel':'+ Add account'}</button></div>
+    ${ui.accounts.addOpen ? renderAddAccountForm() : ''}
+    <div style="overflow-x:auto;">
+    <table class="data">
+      <thead><tr><th style="width:80px">Account #</th><th>Account</th><th style="width:120px">Type</th><th>Count</th><th class="num">Total</th><th>Share of total</th><th></th></tr></thead>
+      <tbody>${bodyRows}
+        <tr class="totals-row"><td colspan="3">Total</td><td>${yearTx.length}</td><td class="num">${fmtMoney(total)}</td><td colspan="2"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+  return html;
+}
+
+function renderAddAccountForm(){
+  const n = ui.accounts.newAcc;
+  return `<div class="form-grid" style="background:#FBF8EF;padding:14px;border-radius:6px;border:1px solid var(--border);max-width:480px;">
+    <div><label>Account #</label><input type="text" value="${escapeAttr(n.code)}" oninput="ui.accounts.newAcc.code=this.value" class="mono" style="width:100%"></div>
+    <div><label>Account name</label><input type="text" value="${escapeAttr(n.name)}" oninput="ui.accounts.newAcc.name=this.value"></div>
+    <div><label>Type</label><select onchange="App.newAccountTypeChange(this.value)">${ACCOUNT_TYPES.map(t=>`<option value="${t}" ${t===n.type?'selected':''}>${t}</option>`).join('')}</select></div>
+  </div>
+  <div style="margin-bottom:14px;"><button class="btn btn-primary btn-sm" onclick="App.addAccount()">Save account</button></div>`;
+}
+
+/* ---------------------------- Summary (rollup by classification) ---------------------------- */
+function classificationTotal(type, yearTx){
+  const ids = new Set(state.accounts.filter(a=>a.type===type).map(a=>a.id));
+  return yearTx.reduce((s,t)=> ids.has(t.accountId) ? s+(Number(t.amount)||0) : s, 0);
+}
+
+function renderSummary(){
+  const yearTx = transactionsForYear();
+  const totals = {};
+  ACCOUNT_TYPES.forEach(type=>{ totals[type] = classificationTotal(type, yearTx); });
+  const netIncome = (totals.Revenue||0) - (totals.Expense||0);
+  const unassignedTx = yearTx.filter(t=>!t.accountId || t.accountId===UNASSIGNED_ID);
+
+  let html = `<h2 class="page-title">Account Summary</h2><p class="page-sub">Every account rolled up under its classification, for ${ui.yearFilter||'all years'}. Read-only — manage accounts themselves on the Accounts tab.</p>`;
+
+  if(unassignedTx.length>0){
+    const unassignedTotal = unassignedTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+    html += `<div class="banner banner-warn">⚠ <b>${unassignedTx.length}</b> unassigned transaction${unassignedTx.length===1?'':'s'} (${fmtMoney(unassignedTotal)}) ${unassignedTx.length===1?'is':'are'} excluded from the totals below. <a class="linklike" onclick="App.setTab('ledger')">Go classify them</a></div>`;
+  }
+
+  // top-line tiles: one per classification, plus net income
+  const TYPE_TILE_LABEL = { Asset:'Total Assets', Liability:'Total Liabilities', Equity:'Total Equity', Revenue:'Total Revenue', Expense:'Total Expenses' };
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px;">`;
+  ACCOUNT_TYPES.forEach(type=>{
+    html += `<div class="card" style="margin-bottom:0;padding:16px 18px;border-left:4px solid ${PALETTE_BY_TYPE[type]};">
+      <div class="small" style="text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:6px;">${TYPE_TILE_LABEL[type]}</div>
+      <div class="num" style="font-size:20px;text-align:left;">${fmtMoney(totals[type])}</div>
+    </div>`;
+  });
+  html += `<div class="card" style="margin-bottom:0;padding:16px 18px;border-left:4px solid ${netIncome>=0?'var(--green)':'var(--maroon)'};">
+    <div class="small" style="text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:6px;">Net Income</div>
+    <div class="num" style="font-size:20px;text-align:left;color:${netIncome>=0?'var(--green-dark)':'var(--maroon)'};">${fmtMoney(netIncome)}</div>
+  </div>`;
+  html += `</div>`;
+
+  // one detail card per classification, with a subtotal row
+  ACCOUNT_TYPES.forEach(type=>{
+    const classTotal = totals[type];
+    const accs = state.accounts.filter(a=>a.type===type).sort((a,b)=>(parseInt(a.code,10)||0)-(parseInt(b.code,10)||0) || a.name.localeCompare(b.name));
+    let rows = accs.map(a=>{
+      const rowTx = yearTx.filter(t=>t.accountId===a.id);
+      const sum = rowTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+      const pct = classTotal!==0 ? Math.round((sum/Math.abs(classTotal))*100) : 0;
+      return `<tr>
+        <td class="mono">${escapeHtml(a.code)}</td>
+        <td>${escapeHtml(a.name)}</td>
+        <td class="small">${rowTx.length}</td>
+        <td class="num">${fmtMoney(sum)}</td>
+        <td style="width:140px;"><div class="catbar-wrap"><div class="catbar-track"><div class="catbar-fill" style="width:${Math.min(Math.abs(pct),100)}%;background:${PALETTE_BY_TYPE[type]};"></div></div><span class="small mono">${pct}%</span></div></td>
+      </tr>`;
+    }).join('');
+    if(!rows) rows = `<tr><td colspan="5" class="small" style="padding:14px;text-align:center;">No ${type.toLowerCase()} accounts yet.</td></tr>`;
+
+    html += `<div class="card">
+      <div class="card-title"><span class="badge ${TYPE_BADGE[type]}">${type}</span><span class="num" style="font-size:15px;">${fmtMoney(classTotal)}</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data">
+        <thead><tr><th style="width:80px">Account #</th><th>Account</th><th>Count</th><th class="num">Total</th><th>Share of ${type.toLowerCase()}</th></tr></thead>
+        <tbody>${rows}
+          <tr class="totals-row"><td colspan="3">Total ${type}</td><td class="num">${fmtMoney(classTotal)}</td><td></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+  });
+
+  return html;
+}
+
+/* ---------------------------- Projects ---------------------------- */
+function renderProjects(){
+  let html = `<h2 class="page-title">Projects</h2><p class="page-sub">Tag transactions to a project or job, and give each one a short description for context. Totals reflect ${ui.yearFilter||'all years'}.</p>`;
+
+  const yearTx = transactionsForYear();
+  const sorted = state.projects.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const rows = sorted.map(p=>{
+    const rowTx = yearTx.filter(t=>t.projectId===p.id);
+    const sum = rowTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+    return `<tr>
+      <td><input type="text" value="${escapeAttr(p.name)}" onchange="App.renameProject('${p.id}', this.value)" style="width:160px"></td>
+      <td><input type="text" value="${escapeAttr(p.description)}" onchange="App.updateProjectDescription('${p.id}', this.value)" placeholder="What is this project?" style="width:100%"></td>
+      <td class="small">${rowTx.length}</td>
+      <td class="num">${fmtMoney(sum)}</td>
+      <td>${rowTx.length===0 ? `<button class="btn btn-danger btn-sm" onclick="App.deleteProject('${p.id}')">Delete</button>` : '<span class="small">in use</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  html += `<div class="card">
+    <div class="card-title">Projects <button class="btn btn-primary btn-sm" onclick="App.toggleAddProject()">${ui.projects.addOpen?'Cancel':'+ Add project'}</button></div>
+    ${ui.projects.addOpen ? renderAddProjectForm() : ''}
+    <div style="overflow-x:auto;">
+    <table class="data">
+      <thead><tr><th style="width:180px">Project</th><th>Description</th><th>Count</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5" class="small" style="padding:18px;text-align:center">No projects yet — add one above, or they'll be created automatically when you import a file with a project column.</td></tr>`}</tbody>
+    </table>
+    </div>
+  </div>`;
+  return html;
+}
+
+function renderAddProjectForm(){
+  const n = ui.projects.newProj;
+  return `<div class="form-grid" style="background:#FBF8EF;padding:14px;border-radius:6px;border:1px solid var(--border);">
+    <div><label>Project name</label><input type="text" value="${escapeAttr(n.name)}" oninput="ui.projects.newProj.name=this.value"></div>
+    <div style="grid-column:1 / -1;"><label>Description</label><input type="text" value="${escapeAttr(n.description)}" oninput="ui.projects.newProj.description=this.value" placeholder="Optional — what is this project?"></div>
+  </div>
+  <div style="margin-bottom:14px;"><button class="btn btn-primary btn-sm" onclick="App.addProject()">Save project</button></div>`;
+}
+
+/* ---------------------------- Excel export ---------------------------- */
+function exportToExcelImpl(){
+  const txs = transactionsForYear();
+  const wsData = [['Date','Description','Source','Account #','Account','Project','Amount']];
+  txs.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{
+    const acc = getAccount(t.accountId);
+    const proj = getProject(t.projectId);
+    wsData.push([t.date, t.description||'', t.source||'', acc?acc.code:'9999', acc?acc.name:'Unassigned', proj?proj.name:'', round2(t.amount)]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:12},{wch:36},{wch:18},{wch:10},{wch:22},{wch:16},{wch:12}];
+
+  const total = txs.reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const summaryData = [['Type','Account #','Account','Count','Total Amount']];
+  ACCOUNT_TYPES.concat(['Unassigned']).forEach(type=>{
+    state.accounts.filter(a=>a.type===type).sort((a,b)=>(parseInt(a.code,10)||0)-(parseInt(b.code,10)||0)).forEach(a=>{
+      const rows = txs.filter(t=>t.accountId===a.id);
+      if(rows.length===0) return;
+      const sum = rows.reduce((s,t)=>s+(Number(t.amount)||0),0);
+      summaryData.push([type, a.code, a.name, rows.length, round2(sum)]);
+    });
+  });
+  summaryData.push(['','','Total', txs.length, round2(total)]);
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{wch:12},{wch:10},{wch:26},{wch:10},{wch:14}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary by Account');
+  XLSX.writeFile(wb, 'general-ledger-'+(ui.yearFilter||'all-years')+'.xlsx');
+}
+
+/* ---------------------------- App actions ---------------------------- */
+const App = {
+  onNameInput(v){ ui.nameInput = v; },
+  onPasscodeInput(v){ ui.passcodeInput = v; },
+  submitPasscode(){
+    const val = (ui.passcodeInput||'').trim();
+    if(!val){ ui.passcodeError = 'Enter the team passcode.'; render(); return; }
+    ui.passcodeBusy = true; ui.passcodeError = ''; render();
+    fbAuth.signInWithEmailAndPassword(TEAM_AUTH_EMAIL, val)
+      .catch(err=>{
+        ui.passcodeBusy = false;
+        const code = err && err.code;
+        if(code==='auth/wrong-password' || code==='auth/invalid-credential' || code==='auth/invalid-login-credentials'){
+          ui.passcodeError = 'Incorrect passcode. Try again.';
+        } else if(code==='auth/too-many-requests'){
+          ui.passcodeError = 'Too many attempts — wait a moment and try again.';
+        } else {
+          // Anything else (network/config/sandboxing issues, etc.) — show the real
+          // error so it can actually be diagnosed instead of being misreported.
+          ui.passcodeError = 'Sign-in error: '+(code || (err && err.message) || 'unknown error');
+        }
+        render();
+      });
+    // on success, the onAuthStateChanged listener below flips state.authed and loads data
+  },
+  dismissToast(){ ui.toast = null; render(); },
+  confirmModalYes(){
+    const cb = ui.confirmModal && ui.confirmModal.onConfirm;
+    ui.confirmModal = null;
+    if(cb) cb();
+    else render();
+  },
+  confirmModalNo(){ ui.confirmModal = null; render(); },
+  enterApp(){
+    const name = (ui.nameInput||'').trim();
+    if(!name){ showToast('Please enter your name to continue.'); return; }
+    state.currentUser = name;
+    saveLastUser(name);
+    touchActivity(name+' signed in');
+    render();
+  },
+  switchUser(){ state.currentUser = null; render(); },
+  setTab(tab){ state.activeTab = tab; render(); },
+  setYearFilter(v){ ui.yearFilter = v; ui.ledger.page = 1; render(); },
+  retrySave(){ clearAutoRetry(); if(state.saveError && state.saveError.retry){ state.saveError.retry(); } },
+  exportToExcel(){
+    if(state.transactions.length===0){ showToast('Nothing to export yet — upload or add some transactions first.'); return; }
+    exportToExcelImpl();
+  },
+
+  /* ---- upload ---- */
+  handleFile(evt){
+    const file = evt.target.files[0];
+    if(!file) return;
+    const name = file.name.toLowerCase();
+    if(name.endsWith('.csv')){
+      Papa.parse(file, { header:true, skipEmptyLines:true, complete:(res)=>{
+        const headers = res.meta.fields || [];
+        App._stageUpload(file.name, headers, res.data);
+      }});
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, {raw:false, defval:''});
+        const headers = json.length ? Object.keys(json[0]) : [];
+        App._stageUpload(file.name, headers, json);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  },
+  _stageUpload(filename, headers, rows){
+    ui.upload.stage = { filename, headers, rows };
+    const g = (...n)=>guessHeader(headers, ...n);
+    ui.upload.mapping = {
+      date: g('date'),
+      description: g('desc','memo','narrative','detail','name'),
+      source: g('source','vendor','payee','merchant'),
+      project: g('project','job','cost center','costcenter'),
+      account: g('account','categ'),
+      amount: g('amount','value','total')
+    };
+    render();
+  },
+  setMapping(field, value){ ui.upload.mapping[field] = value || null; render(); },
+  cancelUpload(){ ui.upload.stage = null; render(); },
+  dismissUploadResult(){ ui.upload.result = null; render(); },
+
+  loadSampleData(){
+    const today = new Date();
+    const iso = (daysAgo)=>{ const d=new Date(today); d.setDate(d.getDate()-daysAgo); return d.toISOString().slice(0,10); };
+    const samples = [
+      [iso(28),'Client invoice — March retainer','Acme Co','',3200,'Service Revenue'],
+      [iso(25),'Verizon Wireless','Verizon','',128.40,'Utilities'],
+      [iso(22),'Home Depot — mulch & supplies','Home Depot','Spring grounds refresh',214.75,'Landscaping & Grounds'],
+      [iso(20),'Staples — paper & toner','Staples','',64.10,''],
+      [iso(18),'State Farm — liability policy','State Farm','',410.00,'Insurance'],
+      [iso(15),'Law Office of J. Wickersham','Wickersham Law','Bylaw revision',650.00,'Professional & Legal Fees'],
+      [iso(12),'Adobe Creative Cloud','Adobe','',54.99,'Software & Subscriptions'],
+      [iso(9),'GreenScape Lawn Care — monthly','GreenScape','',380.00,''],
+      [iso(5),'Bank monthly service fee','First National Bank','',15.00,'Bank & Merchant Fees'],
+      [iso(2),'Facebook Ads — spring promo','Meta','Spring promo',95.50,'Marketing & Advertising']
+    ];
+    let added=0, newAccs=0, newProjs=0;
+    samples.forEach(([date,desc,source,projectName,amount,accName])=>{
+      let accountId = UNASSIGNED_ID;
+      if(accName){
+        let acc = findAccountByName(accName);
+        if(!acc){ acc = createAccount(accName,'Expense'); newAccs++; }
+        accountId = acc.id;
+      }
+      let projectId = '';
+      if(projectName){
+        let proj = findProjectByName(projectName);
+        if(!proj){ proj = createProject(projectName,''); newProjs++; }
+        projectId = proj.id;
+      }
+      state.transactions.push({ id:genId('tx'), date, description:desc, source, projectId, amount, accountId, importedFrom:'sample data', enteredBy: state.currentUser, importedAt:new Date().toISOString() });
+      added++;
+    });
+    saveTransactions();
+    if(newAccs) saveAccounts();
+    if(newProjs) saveProjects();
+    touchActivity(state.currentUser+' loaded '+added+' sample transactions');
+    state.activeTab='ledger';
+    render();
+  },
+
+  confirmImport(){
+    const map = ui.upload.mapping;
+    if(!map.date || !map.description || !map.amount){ showToast('Please map Date, Description, and Amount.'); return; }
+    const stage = ui.upload.stage;
+    const newTxs = [];
+    const newAccs = [];
+    const newProjs = [];
+    let errors = 0;
+    let duplicates = 0;
+    const existingSigs = new Set(state.transactions.map(t=>txSignature(t.date, t.description, t.amount, t.source)));
+    const seenInBatch = new Set();
+    stage.rows.forEach(row=>{
+      const iso = parseDateToISO(row[map.date]);
+      const desc = row[map.description];
+      if(!iso || desc===undefined){ errors++; return; }
+      const amount = round2(parseAmount(row[map.amount]));
+      const source = map.source ? String(row[map.source]||'') : '';
+      const sig = txSignature(iso, desc, amount, source);
+      if(existingSigs.has(sig) || seenInBatch.has(sig)){ duplicates++; return; }
+      seenInBatch.add(sig);
+      let projectId = '';
+      if(map.project){
+        const projStr = row[map.project];
+        if(projStr){
+          let proj = findProjectByName(projStr);
+          if(!proj){ proj = createProject(projStr, ''); newProjs.push(proj); }
+          projectId = proj.id;
+        }
+      }
+      let accountId = UNASSIGNED_ID;
+      if(map.account){
+        const accStr = row[map.account];
+        if(accStr){
+          let acc = findAccountByCode(accStr) || findAccountByName(accStr);
+          if(!acc){ acc = createAccount(accStr, 'Expense'); newAccs.push(acc); }
+          accountId = acc.id;
+        }
+      }
+      newTxs.push({ id:genId('tx'), date:iso, description:String(desc||''), source, projectId, amount, accountId, importedFrom: stage.filename, enteredBy: state.currentUser, importedAt:new Date().toISOString() });
+    });
+    state.transactions = state.transactions.concat(newTxs);
+    saveTransactions();
+    if(newAccs.length) saveAccounts();
+    if(newProjs.length) saveProjects();
+    touchActivity(state.currentUser+' imported '+newTxs.length+' transactions from "'+stage.filename+'"'+(duplicates?' ('+duplicates+' duplicate row(s) skipped)':''));
+    ui.upload.result = { imported:newTxs.length, newAccs, newProjs, errors, duplicates };
+    ui.upload.stage = null;
+    state.activeTab = 'ledger';
+    render();
+  },
+
+  /* ---- ledger ---- */
+  setLedgerFilter(field, value){ ui.ledger[field] = value; ui.ledger.page = 1; render(); },
+  setLedgerFilterBool(field, value){ ui.ledger[field] = !!value; ui.ledger.page = 1; render(); },
+  setTypeFilter(value){ ui.ledger.typeFilter = value; ui.ledger.accountFilter = ''; ui.ledger.page = 1; render(); },
+  setAccountFilter(value){ ui.ledger.accountFilter = value; if(value) ui.ledger.typeFilter = ''; ui.ledger.page = 1; render(); },
+  setSort(key){
+    if(ui.ledger.sortBy===key){
+      ui.ledger.sortDir = ui.ledger.sortDir==='asc' ? 'desc' : 'asc';
+    } else {
+      ui.ledger.sortBy = key;
+      ui.ledger.sortDir = SORT_DEFAULT_DIR[key] || 'asc';
+    }
+    ui.ledger.page = 1;
+    render();
+  },
+  ledgerPage(p){ ui.ledger.page = p; render(); },
+  reclassify(txId, newAccId){
+    const t = state.transactions.find(x=>x.id===txId);
+    if(!t) return;
+    const newAcc = getAccount(newAccId);
+    t.accountId = newAccId;
+    saveTransactions();
+    touchActivity(state.currentUser+' reclassified "'+(t.description||'a transaction')+'" to '+(newAcc?newAcc.name:'?'));
+    render();
+  },
+  startTxEdit(txId){
+    const t = state.transactions.find(x=>x.id===txId);
+    if(!t) return;
+    ui.ledger.editingId = txId;
+    ui.ledger.editBuffer = { date:t.date, description:t.description||'', source:t.source||'', projectId:t.projectId||'', amount:t.amount||'' };
+    render();
+  },
+  cancelTxEdit(){ ui.ledger.editingId=null; render(); },
+  saveTxEdit(txId){
+    const t = state.transactions.find(x=>x.id===txId);
+    if(!t) return;
+    const b = ui.ledger.editBuffer;
+    t.date = parseDateToISO(b.date) || b.date;
+    t.description = b.description;
+    t.source = b.source;
+    t.projectId = b.projectId;
+    t.amount = round2(parseAmount(b.amount));
+    ui.ledger.editingId = null;
+    saveTransactions();
+    touchActivity(state.currentUser+' edited "'+(t.description||'a transaction')+'"');
+    render();
+  },
+  deleteTx(txId){
+    const t = state.transactions.find(x=>x.id===txId);
+    if(!t) return;
+    showConfirmModal('Delete this transaction: "'+(t.description||'untitled')+'" ('+fmtDate(t.date)+')?', ()=>{
+      state.transactions = state.transactions.filter(x=>x.id!==txId);
+      saveTransactions();
+      touchActivity(state.currentUser+' deleted "'+(t.description||'a transaction')+'"');
+      render();
+    });
+  },
+  toggleAddTx(){ ui.ledger.addOpen = !ui.ledger.addOpen; render(); },
+  addTransaction(){
+    const n = ui.ledger.newTx;
+    const iso = parseDateToISO(n.date);
+    if(!iso || !n.description.trim()){ showToast('Please enter a date and description.'); return; }
+    state.transactions.push({ id:genId('tx'), date:iso, description:n.description, source:n.source||'', projectId:n.projectId||'', amount: round2(parseAmount(n.amount)), accountId: n.accountId || UNASSIGNED_ID, importedFrom:'manual', enteredBy: state.currentUser, importedAt:new Date().toISOString() });
+    saveTransactions();
+    touchActivity(state.currentUser+' added "'+n.description+'"');
+    ui.ledger.newTx = {date:'',description:'',source:'',projectId:'',amount:'',accountId:''};
+    ui.ledger.addOpen = false;
+    render();
+  },
+
+  /* ---- accounts ---- */
+  toggleAddAccount(){
+    ui.accounts.addOpen = !ui.accounts.addOpen;
+    if(ui.accounts.addOpen){
+      const t = ui.accounts.newAcc.type || 'Expense';
+      ui.accounts.newAcc = { code: nextCodeForType(t), name:'', type: t };
+    }
+    render();
+  },
+  newAccountTypeChange(type){
+    ui.accounts.newAcc.type = type;
+    ui.accounts.newAcc.code = nextCodeForType(type);
+    render();
+  },
+  addAccount(){
+    const n = ui.accounts.newAcc;
+    const name = n.name.trim();
+    const code = (n.code||'').trim();
+    if(!name){ showToast('Enter an account name.'); return; }
+    if(!code){ showToast('Enter an account number.'); return; }
+    if(findAccountByName(name)){ showToast('That account already exists.'); return; }
+    if(findAccountByCode(code)){ showToast('Account number '+code+' is already in use.'); return; }
+    createAccount(name, n.type, code);
+    saveAccounts();
+    touchActivity(state.currentUser+' added account '+code+' — "'+name+'" ('+n.type+')');
+    ui.accounts.addOpen = false;
+    ui.accounts.newAcc = {code:'',name:'',type:'Expense'};
+    showToast('Account '+code+' — "'+name+'" added.', 'ok');
+  },
+  updateAccountCode(accId, newCode){
+    const acc = getAccount(accId);
+    if(!acc) return;
+    const trimmed = newCode.trim();
+    if(!trimmed){ render(); return; }
+    const clash = findAccountByCode(trimmed);
+    if(clash && clash.id!==accId){ showToast('Account number '+trimmed+' is already used by "'+clash.name+'".'); return; }
+    const oldCode = acc.code;
+    acc.code = trimmed;
+    saveAccounts();
+    touchActivity(state.currentUser+' changed account number for "'+acc.name+'" from '+oldCode+' to '+trimmed);
+    render();
+  },
+  renameAccount(accId, newName){
+    const acc = getAccount(accId);
+    if(!acc) return;
+    const trimmed = newName.trim();
+    if(!trimmed){ render(); return; }
+    const oldName = acc.name;
+    acc.name = trimmed;
+    saveAccounts();
+    touchActivity(state.currentUser+' renamed account "'+oldName+'" to "'+trimmed+'"');
+    render();
+  },
+  retypeAccount(accId, newType){
+    const acc = getAccount(accId);
+    if(!acc) return;
+    const oldType = acc.type;
+    acc.type = newType;
+    saveAccounts();
+    touchActivity(state.currentUser+' changed "'+acc.name+'" from '+oldType+' to '+newType);
+    render();
+  },
+  deleteAccount(accId){
+    const acc = getAccount(accId);
+    if(!acc || acc.isDefault) return;
+    const inUse = state.transactions.some(t=>t.accountId===accId);
+    if(inUse){ showToast('This account has transactions assigned and cannot be deleted.'); return; }
+    showConfirmModal('Delete account "'+acc.code+' — '+acc.name+'"?', ()=>{
+      state.accounts = state.accounts.filter(a=>a.id!==accId);
+      saveAccounts();
+      touchActivity(state.currentUser+' deleted account "'+acc.name+'"');
+      render();
+    });
+  },
+
+  /* ---- projects ---- */
+  toggleAddProject(){ ui.projects.addOpen = !ui.projects.addOpen; render(); },
+  addProject(){
+    const n = ui.projects.newProj;
+    const name = n.name.trim();
+    if(!name){ showToast('Enter a project name.'); return; }
+    if(findProjectByName(name)){ showToast('That project already exists.'); return; }
+    createProject(name, n.description||'');
+    saveProjects();
+    touchActivity(state.currentUser+' added project "'+name+'"');
+    ui.projects.addOpen = false;
+    ui.projects.newProj = {name:'',description:''};
+    render();
+  },
+  renameProject(projId, newName){
+    const proj = getProject(projId);
+    if(!proj) return;
+    const trimmed = newName.trim();
+    if(!trimmed){ render(); return; }
+    const oldName = proj.name;
+    proj.name = trimmed;
+    saveProjects();
+    touchActivity(state.currentUser+' renamed project "'+oldName+'" to "'+trimmed+'"');
+    render();
+  },
+  updateProjectDescription(projId, newDesc){
+    const proj = getProject(projId);
+    if(!proj) return;
+    proj.description = newDesc;
+    saveProjects();
+    touchActivity(state.currentUser+' updated description for project "'+proj.name+'"');
+    render();
+  },
+  deleteProject(projId){
+    const proj = getProject(projId);
+    if(!proj) return;
+    const inUse = state.transactions.some(t=>t.projectId===projId);
+    if(inUse){ showToast('This project has transactions assigned and cannot be deleted.'); return; }
+    showConfirmModal('Delete project "'+proj.name+'"?', ()=>{
+      state.projects = state.projects.filter(p=>p.id!==projId);
+      saveProjects();
+      touchActivity(state.currentUser+' deleted project "'+proj.name+'"');
+      render();
+    });
+  }
+};
+
+fbAuth.onAuthStateChanged(user=>{
+  if(user){
+    state.authed = true;
+    loadAll();
+  } else {
+    state.authed = false;
+    state.ready = true; // so render() shows the passcode gate instead of "Loading…"
+    render();
+  }
+});
+</script>
+</body>
+</html>
