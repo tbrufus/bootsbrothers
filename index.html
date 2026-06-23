@@ -200,6 +200,7 @@ const ui = {
   passcodeError: '',
   passcodeBusy: false,
   yearFilter: '',
+  monthFilter: '',
   toast: null,
   confirmModal: null,
   upload: { stage:null, mapping:{date:null,description:null,source:null,account:null,project:null,amount:null}, result:null },
@@ -957,14 +958,39 @@ function classificationTotal(type, yearTx){
   return yearTx.reduce((s,t)=> ids.has(t.accountId) ? s+(Number(t.amount)||0) : s, 0);
 }
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function transactionsForSummaryPeriod(){
+  let txs = transactionsForYear();
+  if(ui.monthFilter){
+    txs = txs.filter(t=> t.date && t.date.slice(5,7)===ui.monthFilter);
+  }
+  return txs;
+}
+
 function renderSummary(){
-  const yearTx = transactionsForYear();
+  const yearTx = transactionsForSummaryPeriod();
   const totals = {};
   ACCOUNT_TYPES.forEach(type=>{ totals[type] = classificationTotal(type, yearTx); });
   const netIncome = (totals.Revenue||0) - (totals.Expense||0);
   const unassignedTx = yearTx.filter(t=>!t.accountId || t.accountId===UNASSIGNED_ID);
 
-  let html = `<h2 class="page-title">Account Summary</h2><p class="page-sub">Every account rolled up under its classification, for ${ui.yearFilter||'all years'}. Read-only — manage accounts themselves on the Accounts tab.</p>`;
+  const years = getAvailableYears();
+  const yearOpts = `<option value="">All Years</option>` + years.map(y=>`<option value="${y}" ${y===ui.yearFilter?'selected':''}>${y}</option>`).join('');
+  const monthOpts = `<option value="">All Months</option>` + MONTH_NAMES.map((name,i)=>{
+    const v = String(i+1).padStart(2,'0');
+    return `<option value="${v}" ${v===ui.monthFilter?'selected':''}>${name}</option>`;
+  }).join('');
+  const periodLabel = (ui.monthFilter ? MONTH_NAMES[parseInt(ui.monthFilter,10)-1]+' ' : '') + (ui.yearFilter || (ui.monthFilter ? '(all years)' : 'all years'));
+
+  let html = `<h2 class="page-title">Account Summary</h2><p class="page-sub">Every account rolled up under its classification, for ${periodLabel}. Read-only — manage accounts themselves on the Accounts tab.</p>`;
+
+  html += `<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;">
+    <label class="small" style="font-weight:700;">Month</label>
+    <select onchange="App.setMonthFilter(this.value)" style="border:1px solid var(--border);border-radius:4px;padding:6px 9px;font-size:13px;background:#fff;">${monthOpts}</select>
+    <label class="small" style="font-weight:700;margin-left:8px;">Year</label>
+    <select onchange="App.setYearFilter(this.value)" style="border:1px solid var(--border);border-radius:4px;padding:6px 9px;font-size:13px;background:#fff;">${yearOpts}</select>
+  </div>`;
 
   if(unassignedTx.length>0){
     const unassignedTotal = unassignedTx.reduce((s,t)=>s+(Number(t.amount)||0),0);
@@ -1136,6 +1162,7 @@ const App = {
   switchUser(){ state.currentUser = null; render(); },
   setTab(tab){ state.activeTab = tab; render(); },
   setYearFilter(v){ ui.yearFilter = v; ui.ledger.page = 1; render(); },
+  setMonthFilter(v){ ui.monthFilter = v; render(); },
   retrySave(){ clearAutoRetry(); if(state.saveError && state.saveError.retry){ state.saveError.retry(); } },
   exportToExcel(){
     if(state.transactions.length===0){ showToast('Nothing to export yet — upload or add some transactions first.'); return; }
